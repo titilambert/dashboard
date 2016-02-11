@@ -135,6 +135,17 @@ func CreateHttpApiHandler(client *client.Client, heapsterClient HeapsterClient,
 			Writes(ReplicationControllerPods{}))
 	wsContainer.Add(replicationControllerWs)
 
+	daemonSetWs := new(restful.WebService)
+	daemonSetWs.Filter(wsLogger)
+	daemonSetWs.Path("/api/daemonsets").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON)
+	daemonSetWs.Route(
+		daemonSetWs.POST("/{namespace}/{daemonSet}/rolling-update").
+			To(apiHandler.handleRollingUpdateDaemonSet).
+			Reads(AppDeploymentFromFileSpec{}))
+	wsContainer.Add(daemonSetWs)
+
 	namespacesWs := new(restful.WebService)
 	namespacesWs.Filter(wsLogger)
 	namespacesWs.Path("/api/v1/namespaces").
@@ -505,4 +516,29 @@ func handleInternalError(response *restful.Response, err error) {
 	log.Print(err)
 	response.AddHeader("Content-Type", "text/plain")
 	response.WriteErrorString(http.StatusInternalServerError, err.Error()+"\n")
+}
+
+// Handles Rolling update of Daemon Set.
+func (apiHandler *ApiHandler) handleRollingUpdateDaemonSet(
+	request *restful.Request, response *restful.Response) {
+
+	oldDsName := request.PathParameter("daemonSet")
+	namespace := request.PathParameter("namespace")
+	if apiHandler.namespace != "" && namespace != apiHandler.namespace {
+		err := errors.New("Namespace restriction enabled server-side")
+		handleInternalError(response, err)
+		return
+	}
+
+	deploymentSpec := new(AppDeploymentFromFileSpec)
+	if err := request.ReadEntity(deploymentSpec); err != nil {
+		handleInternalError(response, err)
+		return
+	}
+	if err := RollingUpdateDaemonSet(apiHandler.client, namespace, oldDsName, deploymentSpec); err != nil {
+		handleInternalError(response, err)
+		return
+	}
+
+	response.WriteHeader(http.StatusAccepted)
 }
