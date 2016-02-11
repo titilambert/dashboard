@@ -127,6 +127,10 @@ func CreateHttpApiHandler(client *client.Client, heapsterClient HeapsterClient,
 			To(apiHandler.handleUpdateReplicasCount).
 			Reads(ReplicationControllerSpec{}))
 	replicationControllerWs.Route(
+		replicationControllerWs.POST("/{namespace}/{replicationController}/rolling-update").
+			To(apiHandler.handleRollingUpdate).
+			Reads(AppDeploymentFromFileSpec{}))
+	replicationControllerWs.Route(
 		replicationControllerWs.DELETE("/{namespace}/{replicationController}").
 			To(apiHandler.handleDeleteReplicationController))
 	replicationControllerWs.Route(
@@ -343,6 +347,31 @@ func (apiHandler *ApiHandler) handleUpdateReplicasCount(
 
 	if err := UpdateReplicasCount(apiHandler.client, namespace, replicationControllerName,
 		replicationControllerSpec); err != nil {
+		handleInternalError(response, err)
+		return
+	}
+
+	response.WriteHeader(http.StatusAccepted)
+}
+
+// Handles Rolling update of Replication Controller.
+func (apiHandler *ApiHandler) handleRollingUpdate(
+	request *restful.Request, response *restful.Response) {
+
+	oldRcName := request.PathParameter("replicationController")
+	namespace := request.PathParameter("namespace")
+
+	if apiHandler.namespace != "" && namespace != apiHandler.namespace {
+		err := errors.New("Namespace restriction enabled server-side")
+		handleInternalError(response, err)
+		return
+	}
+	deploymentSpec := new(AppRollingUpdateFromFileSpec)
+	if err := request.ReadEntity(deploymentSpec); err != nil {
+		handleInternalError(response, err)
+		return
+	}
+	if err := RollingUpdateReplicationController(apiHandler.client, namespace, oldRcName, deploymentSpec); err != nil {
 		handleInternalError(response, err)
 		return
 	}
