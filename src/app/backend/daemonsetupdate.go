@@ -15,7 +15,7 @@
 package main
 
 import (
-	//	"bytes"
+	"bytes"
 	"errors"
 	//  "time"
 	"strings"
@@ -23,12 +23,9 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
-	"k8s.io/kubernetes/pkg/fields"
+	"k8s.io/kubernetes/pkg/kubectl"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	kubectlResource "k8s.io/kubernetes/pkg/kubectl/resource"
-	"k8s.io/kubernetes/pkg/labels"
-	"k8s.io/kubernetes/pkg/watch"
-	//	"k8s.io/kubernetes/pkg/kubectl"
 	//    "k8s.io/kubernetes/pkg/util/intstr"
 )
 
@@ -39,8 +36,6 @@ curl -XPOST -H "Content-Type:application/json;charset=UTF-8"  -d '{"name": "brun
 // Updates number of replicas in Replication Controller based on Replication Controller Spec
 func RollingUpdateDaemonSet(apiclient client.Interface, namespace, oldDsName string,
 	newDsSpec *AppDeploymentFromFileSpec) error {
-	// Set duration in seconds before the object should be deleted
-	podsDeleteOptions := api.NewDeleteOptions(int64(5))
 	// Get old DS
 	oldDs, err := apiclient.Extensions().DaemonSets(namespace).Get(oldDsName)
 	if err != nil {
@@ -85,87 +80,21 @@ func RollingUpdateDaemonSet(apiclient client.Interface, namespace, oldDsName str
 	if !ok {
 		return errors.New("Sent file has a bad format")
 	}
-	// Create the new DS
-	_, err = apiclient.Extensions().DaemonSets(namespace).Create(newDs)
+
+	out := &bytes.Buffer{}
+
+	config := &kubectl.DaemonSetRollingUpdaterConfig{
+		Out:   out,
+		OldDs: oldDs,
+		NewDs: newDs,
+	}
+
+	// Create rolling updater
+	updater := kubectl.NewDaemonSetRollingUpdater(namespace, apiclient)
+	// Rolling udpate
+	err = updater.Update(config)
 	if err != nil {
 		return err
-	}
-
-	// Get all pods from the old DS
-	/*
-	   // TODO We should get DS selector with the following line
-	   // But it doesn't work, we always get empty map
-	   selector, err := extensions.LabelSelectorAsSelector(oldDs.Spec.Selector)
-	   if err != nil {
-	         return err
-	   }
-	*/
-	// So we use pod template instead ... Could be dangerous...
-	podDSLabelOld := labels.SelectorFromSet(labels.Set(oldDs.Spec.Template.Labels))
-
-	listoptions := api.ListOptions{
-		LabelSelector: podDSLabelOld,
-		FieldSelector: fields.Everything(),
-	}
-	podOldList, err := apiclient.Pods(namespace).List(listoptions)
-	if err != nil {
-		return err
-	}
-
-	// Delete the old DS
-	err = apiclient.Extensions().DaemonSets(namespace).Delete(oldDs.Name)
-	if err != nil {
-		return err
-	}
-	// TODO BLOCK until DS is deleted
-
-	// Iterate on all pods
-	for _, pod := range podOldList.Items {
-		// Deleting pod
-		// Pod label to filter
-		podLabelOld := labels.SelectorFromSet(pod.Labels)
-		fieldSelector, err := fields.ParseSelector("metadata.name=" + pod.Name)
-		if err != nil {
-			return err
-		}
-
-		// Watch for event with the label of the current pod
-		listoptions2 := api.ListOptions{
-			LabelSelector: podLabelOld,
-			FieldSelector: fieldSelector,
-		}
-		watcherDelete, _ := apiclient.Pods(namespace).Watch(listoptions2)
-		// Delete pod
-		apiclient.Pods(namespace).Delete(pod.ObjectMeta.Name, podsDeleteOptions)
-		// Waiting for pod deletion
-		event := <-watcherDelete.ResultChan()
-		for event.Type != watch.Deleted {
-			event = <-watcherDelete.ResultChan()
-		}
-
-		// Preparing to wait pod creation
-		podlabelNew := labels.SelectorFromSet(newDs.Spec.Template.Labels)
-		fieldSelector2, err := fields.ParseSelector("spec.nodeName=" + pod.Spec.NodeName)
-
-		listoptions4 := api.ListOptions{
-			LabelSelector: podlabelNew,
-			FieldSelector: fieldSelector2,
-		}
-		watcherCreate, _ := apiclient.Pods(namespace).Watch(listoptions4)
-
-		// Waiting for pod creation
-		running := false
-		for !running {
-			<-watcherCreate.ResultChan()
-			podOldList, _ = apiclient.Pods(namespace).List(listoptions4)
-			for _, pod := range podOldList.Items {
-				// Wait for the pod to be ready
-				if api.IsPodReady(&pod) {
-					running = true
-				}
-			}
-		}
-
 	}
 
 	return nil
