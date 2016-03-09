@@ -538,6 +538,9 @@ func (apiHandler *ApiHandler) handleGetDaemonSetList(
 	request *restful.Request, response *restful.Response) {
 
 	namespace := request.PathParameter("namespace")
+	if apiHandler.namespace != "" {
+		namespace = apiHandler.namespace
+	}
 	result, err := GetDaemonSetList(apiHandler.client, namespace)
 	if err != nil {
 		handleInternalError(response, err)
@@ -552,6 +555,9 @@ func (apiHandler *ApiHandler) handleGetDaemonSetDetail(
 	request *restful.Request, response *restful.Response) {
 
 	namespace := request.PathParameter("namespace")
+	if apiHandler.namespace != "" {
+		namespace = apiHandler.namespace
+	}
 	daemonSet := request.PathParameter("daemonSet")
 	result, err := GetDaemonSetDetail(apiHandler.client, apiHandler.heapsterClient, namespace, daemonSet)
 	if err != nil {
@@ -567,6 +573,9 @@ func (apiHandler *ApiHandler) handleGetDaemonSetPods(
 	request *restful.Request, response *restful.Response) {
 
 	namespace := request.PathParameter("namespace")
+	if apiHandler.namespace != "" {
+		namespace = apiHandler.namespace
+	}
 	daemonSet := request.PathParameter("daemonSet")
 	limit, err := strconv.Atoi(request.QueryParameter("limit"))
 	if err != nil {
@@ -586,6 +595,9 @@ func (apiHandler *ApiHandler) handleDeleteDaemonSet(
 	request *restful.Request, response *restful.Response) {
 
 	namespace := request.PathParameter("namespace")
+	if apiHandler.namespace != "" {
+		namespace = apiHandler.namespace
+	}
 	daemonSet := request.PathParameter("daemonSet")
 	deleteServices, err := strconv.ParseBool(request.QueryParameter("deleteServices"))
 	if err != nil {
