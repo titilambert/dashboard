@@ -320,3 +320,123 @@ backendApi.SecretSpec;
  * }}
  */
 backendApi.SecretsList;
+
+
+/**
+ * @typedef {{
+ *   daemonSet: !Array<!backendApi.DaemonSet>
+ * }}
+ */
+backendApi.DaemonSetList;
+
+/**
+ * @typedef {{
+ *   current: number,
+ *   desired: number,
+ *   running: number,
+ *   pending: number,
+ *   failed: number,
+ *   warnings: !Array<!backendApi.Event>
+ * }}
+ */
+backendApi.DaemonSetPodInfo;
+
+/**
+ * @typedef {{
+ *   name: string,
+ *   namespace: string,
+ *   description: string,
+ *   labels: !Object<string, string>,
+ *   pods: !backendApi.DaemonSetPodInfo,
+ *   containerImages: !Array<string>,
+ *   creationTime: string,
+ *   internalEndpoints: !Array<!backendApi.Endpoint>,
+ *   externalEndpoints: !Array<!backendApi.Endpoint>
+ * }}
+ */
+backendApi.DaemonSet;
+
+/**
+ * @typedef {{
+ *   name: string,
+ *   namespace: string,
+ *   labels: !Object<string, string>,
+ *   labelSelector: !Object<string, string>,
+ *   containerImages: !Array<string>,
+ *   podInfo: !backendApi.DaemonSetPodInfo,
+ *   pods: !Array<!backendApi.DaemonSetPod>,
+ *   services: !Array<!backendApi.ServiceDetail>,
+ *   hasMetrics: boolean
+ * }}
+ */
+backendApi.DaemonSetDetail;
+
+/**
+ * @typedef {{
+ *   replicas: number
+ * }}
+ */
+backendApi.DaemonSetSpec;
+
+/**
+ * @typedef {{
+ *   deleteServices: boolean
+ * }}
+ */
+backendApi.DeleteDaemonSetSpec;
+
+/**
+ * @typedef {{
+ *   name: string,
+ *   startTime: ?string,
+ *   status: string,
+ *   podIP: string,
+ *   nodeName: string,
+ *   restartCount: number,
+ *   metrics: backendApi.PodMetrics
+ * }}
+ */
+backendApi.DaemonSetPod;
+
+/**
+ * @typedef {{
+ *   name: string,
+ *   startTime: ?string,
+ *   totalRestartCount: number,
+ *   podContainers: !Array<!backendApi.PodContainer>
+ * }}
+ */
+backendApi.DaemonSetPodWithContainers;
+
+/**
+ * @typedef {{
+ *   pods: !Array<!backendApi.DaemonSetPodWithContainers>
+ * }}
+ */
+backendApi.DaemonSetPods;
+
+
+/**
+ * @typedef {{
+ *   name: string,
+ *   startTime: ?string,
+ *   totalRestartCount: number,
+ *   podContainers: !Array<!backendApi.PodContainer>
+ * }}
+ */
+backendApi.DaemonSetPodWithContainers;
+
+/**
+ * @typedef {{
+ *   pods: !Array<!backendApi.DaemonSetPodWithContainers>
+ * }}
+ */
+backendApi.DaemonSetPods;
+
+/**
+ * @typedef {{
+ *   daemonSets: !Array<!backendApi.DaemonSet>
+ * }}
+ */
+backendApi.DaemonSetList;
+

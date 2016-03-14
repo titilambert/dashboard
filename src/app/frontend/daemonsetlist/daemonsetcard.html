@@ -1,0 +1,133 @@
+<!--
+Copyright 2015 Google Inc. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<md-card class="kd-daemonset-card">
+  <md-card-content>
+    <div layout="column">
+      <div flex layout="row" layout-align="space-between center"
+            class="kd-daemonset-card-title-row">
+        <span layout="row" flex="85">
+          <md-icon class="material-icons md-warn kd-daemonset-card-status-icon"
+                   ng-if="::ctrl.hasWarnings()">
+            error
+            <md-tooltip>One or more pods have errors</md-tooltip>
+          </md-icon>
+          <md-icon class="material-icons kd-daemonset-card-status-icon"
+                   ng-if="::ctrl.isPending()">
+            timelapse
+            <md-tooltip>One or more pods are in pending state</md-tooltip>
+          </md-icon>
+          <a ng-href="{{::ctrl.getDaemonSetDetailHref()}}"
+             class="kd-daemonset-card-name">
+            <span class="md-title kd-daemonset-card-title">
+              <kd-middle-ellipsis display-string="{{::ctrl.daemonSet.name}}">
+              </kd-middle-ellipsis>
+            </span>
+          </a>
+        </span>
+        <kd-daemon-set-card-menu daemon-set="::ctrl.daemonSet">
+        </kd-daemon-set-card-menu>
+      </div>
+      <div class="md-caption">
+        <kd-labels labels="::ctrl.daemonSet.labels"></kd-labels>
+      </div>
+    </div>
+    <div class="md-caption">
+      <div layout="row" layout-align="center end">
+        <span flex="60">
+          <ng-pluralize class="kd-daemonset-card-pods-stat kd-comma-separated-item"
+                        count="::ctrl.daemonSet.pods.running"
+                        when="{'one': '1 pod running', 'other': '{} pods running'}">
+          </ng-pluralize>
+          <span ng-if="::ctrl.daemonSet.pods.pending"
+              class="kd-replicase-card-pods-stat kd-comma-separated-item">
+            {{::ctrl.daemonSet.pods.pending}} pending<!-- Collapse whitespace
+          --></span>
+          <span ng-if="::ctrl.daemonSet.pods.failed"
+              class="kd-replicase-card-pods-stat kd-comma-separated-item">
+            {{::ctrl.daemonSet.pods.failed}} failed<!-- Collapse whitespace
+          --></span>
+          <span ng-if="!ctrl.areDesiredPodsRunning()"
+                class="kd-replicase-card-pods-stat kd-comma-separated-item">
+            {{::ctrl.daemonSet.pods.desired}} desired
+          </span>
+        </span>
+        <logs-menu flex="40" namespace="::ctrl.daemonSet.namespace"
+                   daemon-set-name="::ctrl.daemonSet.name">
+        </logs-menu>
+      </div>
+      <md-divider class="kd-daemonset-card-divider"></md-divider>
+      <div layout="row" layout-wrap>
+        <div ng-if="::ctrl.daemonSet.description" flex="100" layout="column"
+            class="kd-daemonset-card-section">
+          <span flex class="kd-daemonset-card-section-title">Description</span>
+          <div flex class="kd-daemonset-card-description">{{::ctrl.daemonSet.description}}</div>
+        </div>
+
+        <div flex="60" layout="column" class="kd-daemonset-card-section">
+          <span class="kd-daemonset-card-section-title">Image</span>
+          <div ng-repeat="image in ::ctrl.daemonSet.containerImages track by $index"
+               class="kd-daemonset-card-section-image">
+            <kd-middle-ellipsis display-string="{{::image}}"></kd-middle-ellipsis>
+          </div>
+        </div>
+
+        <div flex="40" layout="column" class="kd-daemonset-card-section">
+          <span flex="initial" class="kd-daemonset-card-section-title">Age</span>
+          <span flex="nogrow">
+            {{::ctrl.daemonSet.creationTime | relativeTime}}
+            <md-tooltip>
+              Created at {{::ctrl.daemonSet.creationTime | date:'short'}}
+            </md-tooltip>
+          </span>
+        </div>
+
+        <div flex="60" layout="column" class="kd-daemonset-card-section">
+          <span flex="initial" class="kd-daemonset-card-section-title">Internal endpoint</span>
+          <div flex>
+            <div ng-repeat="endpoint in ::ctrl.daemonSet.internalEndpoints track by $index">
+              <kd-service-endpoint endpoint="::endpoint"></kd-service-endpoint>
+            </div>
+            <div ng-if="::!ctrl.daemonSet.internalEndpoints.length">
+              none
+            </div>
+          </div>
+        </div>
+
+        <div flex="40" layout="column" class="kd-daemonset-card-section">
+          <span flex="initial" class="kd-daemonset-card-section-title">External endpoint</span>
+          <div flex>
+            <div ng-repeat="endpoint in ::ctrl.daemonSet.externalEndpoints track by $index">
+              <kd-service-endpoint endpoint="::endpoint"></kd-service-endpoint>
+            </div>
+            <div ng-if="::!ctrl.daemonSet.externalEndpoints.length">
+              none
+            </div>
+          </div>
+        </div>
+      </div>
+      <div layout="column" ng-if="::ctrl.hasWarnings()">
+        <md-divider class="kd-daemonset-card-divider"></md-divider>
+        <div layout-wrap>
+          <div flex class="kd-daemonset-card-section"
+               ng-repeat="warning in ::ctrl.daemonSet.pods.warnings">
+            <span class="kd-daemonset-card-error">{{::warning.message}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </md-card-content>
+</md-card>
