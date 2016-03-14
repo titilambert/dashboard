@@ -129,12 +129,18 @@ func GetReplicationControllerPodsEvents(client *client.Client, namespace, replic
 	error) {
 	replicationController, err := client.ReplicationControllers(namespace).Get(replicationControllerName)
 
+	var selector map[string]string
 	if err != nil {
-		return nil, err
+		daemonSet, err := client.Extensions().DaemonSets(namespace).Get(replicationControllerName)
+		if err != nil {
+			return nil, err
+		}
+		selector = daemonSet.Spec.Selector.MatchLabels
+	} else {
+		selector = replicationController.Spec.Selector
 	}
-
 	pods, err := client.Pods(namespace).List(api.ListOptions{
-		LabelSelector: labels.SelectorFromSet(replicationController.Spec.Selector),
+		LabelSelector: labels.SelectorFromSet(selector),
 		FieldSelector: fields.Everything(),
 	})
 
