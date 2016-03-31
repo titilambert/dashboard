@@ -530,7 +530,7 @@ func (apiHandler *ApiHandler) handleRollingUpdateDaemonSet(
 		return
 	}
 
-	deploymentSpec := new(AppDeploymentFromFileSpec)
+	deploymentSpec := new(AppDaemonSetUpdateFromFileSpec)
 	if err := request.ReadEntity(deploymentSpec); err != nil {
 		handleInternalError(response, err)
 		return

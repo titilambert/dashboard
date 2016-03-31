@@ -17,8 +17,8 @@ package main
 import (
 	"bytes"
 	"errors"
-	//  "time"
 	"strings"
+	"time"
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/extensions"
@@ -33,13 +33,51 @@ import (
 curl -XPOST -H "Content-Type:application/json;charset=UTF-8"  -d '{"name": "brun2-v2.0.0", "content": "apiVersion: v1\nkind: ReplicationController\nmetadata:\n  labels:\n    app: brun2-v1.0.0\n    version: v2.0.0\n  name: brun2-v2.0.0\nspec:\n  replicas: 4\n  selector:\n    app: brun2-v2.0.0\n  template:\n    metadata:\n      labels:\n        app: brun2-v2.0.0\n    spec:\n      nodeSelector:\n        brun: \"true\"\n        brun_version: v1.0.0\n      containers:\n      - image: busybox\n        command:\n          - sleep\n          - \"360000\"\n        name: busybox\n        resources:\n          requests:\n            memory: \"128Mi\"\n            cpu: \"1\"\n          limits:\n            memory: \"128Mi\"\n            cpu: \"1\"\n" }' http://127.0.0.1:9090/api/replicationcontrollers/brun2/brun2-v1.0.0/rolling-update
 */
 
+// Specification for deployment from file
+type AppDaemonSetUpdateFromFileSpec struct {
+	// Name of the file
+	Name string `json:"name"`
+
+	// File content
+	Content string `json:"content"`
+
+	// Timeout
+	Timeout int64 `json:"timeout"`
+
+	// Deletion Interval
+	dInterval int64 `json:"deletion-timeout"`
+
+	// Recreation Interval
+	rInterval int64 `json:"creation-timeout"`
+}
+
 // Updates number of replicas in Replication Controller based on Replication Controller Spec
 func RollingUpdateDaemonSet(apiclient client.Interface, namespace, oldDsName string,
-	newDsSpec *AppDeploymentFromFileSpec) error {
+	newDsSpec *AppDaemonSetUpdateFromFileSpec) error {
 	// Get old DS
 	oldDs, err := apiclient.Extensions().DaemonSets(namespace).Get(oldDsName)
 	if err != nil {
 		return err
+	}
+
+	var timeout time.Duration
+	var dinterval time.Duration
+	var rinterval time.Duration
+
+	if newDsSpec.Timeout == 0 {
+		timeout = time.Duration(300) * time.Second // default 5m0s
+	} else {
+		timeout = time.Duration(newDsSpec.Timeout) * time.Second
+	}
+	if newDsSpec.dInterval == 0 {
+		dinterval = time.Duration(10) * time.Second // default 10s
+	} else {
+		dinterval = time.Duration(newDsSpec.dInterval) * time.Second
+	}
+	if newDsSpec.rInterval == 0 {
+		rinterval = time.Duration(0) * time.Second // default 0s
+	} else {
+		rinterval = time.Duration(newDsSpec.rInterval) * time.Second
 	}
 
 	// Get new DS
@@ -84,9 +122,12 @@ func RollingUpdateDaemonSet(apiclient client.Interface, namespace, oldDsName str
 	out := &bytes.Buffer{}
 
 	config := &kubectl.DaemonSetRollingUpdaterConfig{
-		Out:   out,
-		OldDs: oldDs,
-		NewDs: newDs,
+		Out:       out,
+		OldDs:     oldDs,
+		NewDs:     newDs,
+		RInterval: rinterval,
+		DInterval: dinterval,
+		Timeout:   timeout,
 	}
 
 	// Create rolling updater
