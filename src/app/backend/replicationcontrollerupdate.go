@@ -17,6 +17,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -146,7 +147,7 @@ func RollingUpdateReplicationController(client client.Interface, namespace, oldN
 	// Rolling udpate
 	err = updater.Update(config)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s\noutput\n%s", err, out)
 	}
 
 	return nil
