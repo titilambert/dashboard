@@ -17,6 +17,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -135,7 +136,7 @@ func RollingUpdateDaemonSet(apiclient client.Interface, namespace, oldDsName str
 	// Rolling udpate
 	err = updater.Update(config)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s\noutput:\n%s", err, out)
 	}
 
 	return nil
