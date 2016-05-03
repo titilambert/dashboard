@@ -166,7 +166,7 @@ func RollingUpdateByNodeReplicationController(client client.Interface, namespace
 	// Rolling udpate
 	err = updater.Update(config)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s\noutput:\n", err, out)
 	}
 
 	return nil
