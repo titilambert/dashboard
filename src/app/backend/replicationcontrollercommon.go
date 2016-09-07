@@ -31,19 +31,19 @@ type ReplicationControllerWithPods struct {
 // ReplicationControllerPodInfo represents aggregate information about replication controller pods.
 type ReplicationControllerPodInfo struct {
 	// Number of pods that are created.
-	Current int `json:"current"`
+	Current int32 `json:"current"`
 
 	// Number of pods that are desired in this Replication Controller.
-	Desired int `json:"desired"`
+	Desired int32 `json:"desired"`
 
 	// Number of pods that are currently running.
-	Running int `json:"running"`
+	Running int32 `json:"running"`
 
 	// Number of pods that are currently waiting.
-	Pending int `json:"pending"`
+	Pending int32 `json:"pending"`
 
 	// Number of pods that are failed.
-	Failed int `json:"failed"`
+	Failed int32 `json:"failed"`
 
 	// Unique warning messages related to pods in this Replication Controller.
 	Warnings []Event `json:"warnings"`

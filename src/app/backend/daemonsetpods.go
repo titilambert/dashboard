@@ -98,7 +98,7 @@ func getDaemonSetPods(pods []api.Pod, limit int) *DaemonSetPods {
 			podContainer, ok := podContainersByName[containerStatus.Name]
 			if ok {
 				podContainer.RestartCount = containerStatus.RestartCount
-				totalRestartCount += containerStatus.RestartCount
+				totalRestartCount += int(containerStatus.RestartCount)
 			}
 		}
 		daemonSetPodWithContainers.TotalRestartCount = totalRestartCount

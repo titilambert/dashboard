@@ -101,7 +101,7 @@ type ServiceDetail struct {
 // ServicePort is a pair of port and protocol, e.g. a service endpoint.
 type ServicePort struct {
 	// Positive port number.
-	Port int `json:"port"`
+	Port int32 `json:"port"`
 
 	// Protocol name, e.g., TCP or UDP.
 	Protocol api.Protocol `json:"protocol"`
@@ -119,7 +119,7 @@ type Endpoint struct {
 // ReplicationControllerSpec contains information needed to update replication controller.
 type ReplicationControllerSpec struct {
 	// Replicas (pods) number in replicas set
-	Replicas int `json:"replicas"`
+	Replicas int32 `json:"replicas"`
 }
 
 // GetReplicationControllerDetail returns detailed information about the given replication
@@ -302,7 +302,7 @@ func getServiceDetail(service api.Service, replicationController api.Replication
 func getRestartCount(pod api.Pod) int {
 	restartCount := 0
 	for _, containerStatus := range pod.Status.ContainerStatuses {
-		restartCount += containerStatus.RestartCount
+		restartCount += int(containerStatus.RestartCount)
 	}
 	return restartCount
 }

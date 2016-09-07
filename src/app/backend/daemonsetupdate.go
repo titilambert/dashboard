@@ -91,7 +91,7 @@ func RollingUpdateDaemonSet(apiclient client.Interface, namespace, oldDsName str
 	if err != nil {
 		return err
 	}
-	mapper, typer := factory.Object()
+	mapper, typer := factory.Object(false)
 	reader := strings.NewReader(newDsSpec.Content)
 	if namespace == "" {
 		namespace = api.NamespaceDefault
