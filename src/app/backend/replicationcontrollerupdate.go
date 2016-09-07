@@ -100,7 +100,7 @@ func RollingUpdateReplicationController(client client.Interface, namespace, oldN
 		return err
 	}
 
-	mapper, typer := factory.Object()
+	mapper, typer := factory.Object(false)
 	reader := strings.NewReader(newRCSpec.Content)
 	if namespace == "" {
 		namespace = api.NamespaceDefault
