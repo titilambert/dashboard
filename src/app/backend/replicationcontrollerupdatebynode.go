@@ -107,7 +107,7 @@ func RollingUpdateByNodeReplicationController(client client.Interface, namespace
 	if err != nil {
 		return err
 	}
-	mapper, typer := factory.Object()
+	mapper, typer := factory.Object(false)
 	reader := strings.NewReader(newRCSpec.Content)
 	if namespace == "" {
 		namespace = api.NamespaceDefault
