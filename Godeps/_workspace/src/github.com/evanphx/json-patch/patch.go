@@ -42,7 +42,7 @@ func newLazyNode(raw *json.RawMessage) *lazyNode {
 func (n *lazyNode) MarshalJSON() ([]byte, error) {
 	switch n.which {
 	case eRaw:
-		return json.Marshal(n.raw)
+		return *n.raw, nil
 	case eDoc:
 		return json.Marshal(n.doc)
 	case eAry:
@@ -366,7 +366,7 @@ func (p Patch) add(doc *partialDoc, op operation) error {
 	con, key := findObject(doc, path)
 
 	if con == nil {
-		return fmt.Errorf("jsonpatch add operation does not apply: doc is missing path: %s", path)
+		return fmt.Errorf("Missing container: %s", path)
 	}
 
 	con.set(key, op.value())
@@ -379,10 +379,6 @@ func (p Patch) remove(doc *partialDoc, op operation) error {
 
 	con, key := findObject(doc, path)
 
-	if con == nil {
-		return fmt.Errorf("jsonpatch remove operation does not apply: doc is missing path: %s", path)
-	}
-
 	return con.remove(key)
 }
 
@@ -390,10 +386,6 @@ func (p Patch) replace(doc *partialDoc, op operation) error {
 	path := op.path()
 
 	con, key := findObject(doc, path)
-
-	if con == nil {
-		return fmt.Errorf("jsonpatch replace operation does not apply: doc is missing path: %s", path)
-	}
 
 	con.set(key, op.value())
 
@@ -404,10 +396,6 @@ func (p Patch) move(doc *partialDoc, op operation) error {
 	from := op.from()
 
 	con, key := findObject(doc, from)
-
-	if con == nil {
-		return fmt.Errorf("jsonpatch move operation does not apply: doc is missing from path: %s", from)
-	}
 
 	val, err := con.get(key)
 
@@ -421,10 +409,6 @@ func (p Patch) move(doc *partialDoc, op operation) error {
 
 	con, key = findObject(doc, path)
 
-	if con == nil {
-		return fmt.Errorf("jsonpatch move operation does not apply: doc is missing destination path: %s", path)
-	}
-
 	con.set(key, val)
 
 	return nil
@@ -435,22 +419,10 @@ func (p Patch) test(doc *partialDoc, op operation) error {
 
 	con, key := findObject(doc, path)
 
-	if con == nil {
-		return fmt.Errorf("jsonpatch test operation does not apply: is missing path: %s", path)
-	}
-
 	val, err := con.get(key)
 
 	if err != nil {
 		return err
-	}
-
-	if val == nil {
-		if op.value().raw == nil {
-			return nil
-		} else {
-			return fmt.Errorf("Testing value %s failed", path)
-		}
 	}
 
 	if val.equal(op.value()) {
@@ -489,12 +461,6 @@ func DecodePatch(buf []byte) (Patch, error) {
 // Apply mutates a JSON document according to the patch, and returns the new
 // document.
 func (p Patch) Apply(doc []byte) ([]byte, error) {
-	return p.ApplyIndent(doc, "")
-}
-
-// ApplyIndent mutates a JSON document according to the patch, and returns the new
-// document indented.
-func (p Patch) ApplyIndent(doc []byte, indent string) ([]byte, error) {
 	pd := &partialDoc{}
 
 	err := json.Unmarshal(doc, pd)
@@ -524,10 +490,6 @@ func (p Patch) ApplyIndent(doc []byte, indent string) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	if indent != "" {
-		return json.MarshalIndent(pd, "", indent)
 	}
 
 	return json.Marshal(pd)

@@ -11,22 +11,15 @@ const (
 )
 
 type Cgroup struct {
-	// Deprecated, use Path instead
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 
-	// name of parent of cgroup or slice
-	// Deprecated, use Path instead
-	Parent string `json:"parent,omitempty"`
-
-	// Path specifies the path to cgroups that are created and/or joined by the container.
-	// The path is assumed to be relative to the host system cgroup mountpoint.
-	Path string `json:"path"`
+	// name of parent cgroup or slice
+	Parent string `json:"parent"`
 
 	// ScopePrefix decribes prefix for the scope name
 	ScopePrefix string `json:"scope_prefix"`
 
-	// Paths represent the absolute cgroups paths to join.
-	// This takes precedence over Path.
+	// Paths represent the cgroups paths to join
 	Paths map[string]string
 
 	// Resources contains various cgroups settings to apply
@@ -35,14 +28,11 @@ type Cgroup struct {
 
 type Resources struct {
 	// If this is true allow access to any kind of device within the container.  If false, allow access only to devices explicitly listed in the allowed_devices list.
-	// Deprecated
-	AllowAllDevices bool `json:"allow_all_devices,omitempty"`
-	// Deprecated
-	AllowedDevices []*Device `json:"allowed_devices,omitempty"`
-	// Deprecated
-	DeniedDevices []*Device `json:"denied_devices,omitempty"`
+	AllowAllDevices bool `json:"allow_all_devices"`
 
-	Devices []*Device `json:"devices"`
+	AllowedDevices []*Device `json:"allowed_devices"`
+
+	DeniedDevices []*Device `json:"denied_devices"`
 
 	// Memory limit (in bytes)
 	Memory int64 `json:"memory"`

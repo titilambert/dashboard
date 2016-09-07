@@ -5,7 +5,6 @@ package cgroups
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker/docker/pkg/mount"
 	"github.com/docker/go-units"
 )
 
@@ -121,45 +121,11 @@ func (m Mount) GetThisCgroupDir(cgroups map[string]string) (string, error) {
 	return getControllerPath(m.Subsystems[0], cgroups)
 }
 
-func getCgroupMountsHelper(ss map[string]bool, mi io.Reader) ([]Mount, error) {
-	res := make([]Mount, 0, len(ss))
-	scanner := bufio.NewScanner(mi)
-	for scanner.Scan() {
-		txt := scanner.Text()
-		sepIdx := strings.IndexByte(txt, '-')
-		if sepIdx == -1 {
-			return nil, fmt.Errorf("invalid mountinfo format")
-		}
-		if txt[sepIdx+2:sepIdx+8] != "cgroup" {
-			continue
-		}
-		fields := strings.Split(txt, " ")
-		m := Mount{
-			Mountpoint: fields[4],
-			Root:       fields[3],
-		}
-		for _, opt := range strings.Split(fields[len(fields)-1], ",") {
-			if strings.HasPrefix(opt, cgroupNamePrefix) {
-				m.Subsystems = append(m.Subsystems, opt[len(cgroupNamePrefix):])
-			}
-			if ss[opt] {
-				m.Subsystems = append(m.Subsystems, opt)
-			}
-		}
-		res = append(res, m)
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
 func GetCgroupMounts() ([]Mount, error) {
-	f, err := os.Open("/proc/self/mountinfo")
+	mounts, err := mount.GetMounts()
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
 
 	all, err := GetAllSubsystems()
 	if err != nil {
@@ -170,7 +136,24 @@ func GetCgroupMounts() ([]Mount, error) {
 	for _, s := range all {
 		allMap[s] = true
 	}
-	return getCgroupMountsHelper(allMap, f)
+
+	res := []Mount{}
+	for _, mount := range mounts {
+		if mount.Fstype == "cgroup" {
+			m := Mount{Mountpoint: mount.Mountpoint, Root: mount.Root}
+
+			for _, opt := range strings.Split(mount.VfsOpts, ",") {
+				if strings.HasPrefix(opt, cgroupNamePrefix) {
+					m.Subsystems = append(m.Subsystems, opt[len(cgroupNamePrefix):])
+				}
+				if allMap[opt] {
+					m.Subsystems = append(m.Subsystems, opt)
+				}
+			}
+			res = append(res, m)
+		}
+	}
+	return res, nil
 }
 
 // Returns all the cgroup subsystems supported by the kernel
